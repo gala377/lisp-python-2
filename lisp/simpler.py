@@ -130,6 +130,8 @@ def eval(env: Env, expr: Any) -> Any:
             if (ret := eval_special_form(env, s, *args)) is not None:
                 return ret
             f = eval(env, s)
+            if isinstance(f, Sym):
+                raise ValueError(f"Symbol {f} is not callable")
             ret = f(env.top_env(), *[eval(env, x) for x in args])
             if ret is None:
                 return []

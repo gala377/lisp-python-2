@@ -8,7 +8,6 @@
   (define cddar (lambda (l) (car (cdr (cdr l)))))
   (define cdddar (lambda (l) (car (cdr (cdr (cdr l))))))
   (define cddr (lambda (l) (cdr (cdr l))))
-  (define and (lambda (x y) (cond (x y) (else #f))))
   (define not (lambda (x) (cond (x #f) (else #t))))
 
   (define map 
@@ -33,6 +32,8 @@
           (rewrite-if (cdar expr) (cddar expr) (cdddar expr)))
         ((eq? (car expr) 'define)
           (rewrite-define (cdar expr) (cddr expr)))
+        ((eq? (car expr) 'and)
+          (rewrite-and (cdr expr)))
         (else (map rewrite-sexpr expr)))))
 
   (define rewrite-let 
@@ -64,18 +65,40 @@
               (cons 'begin (rewrite-sexpr rest)))))
         (else (cons 'define (cons name (rewrite-sexpr rest)))))))
 
+  (define rewrite-and
+    (lambda (expr)
+      (cond 
+        ((nil? expr) #t)
+        (else 
+          (list
+            'cond
+            (list (rewrite-sexpr (car expr)) (rewrite-and (cdr expr)))
+            (list else #f))))))
+
+  (define rewrite-or
+    (lambda (expr)
+      (cond
+        ((nil? expr) #f)
+        (else 
+          (list 
+            'cond
+            (list (rewrite-sexpr (car expr)) #t)
+            (list else (rewrite-or (cdr expr))))))))
+
   (define source-with-let 
     '(begin
-
       (define addition 
         (lambda (x y)
           (let ((ret (+ x y))) ret)))
+      (define (equal x y) (if (eq? x y) "yes" "no"))
       
-      (define (equal x y) (if (eq? x y) "yes" "no")))) 
+      (and 
+        (let ((x 1)) (eq? x 1))
+        (eq? 1 1)
+        #f
+        (nil? (map (lambda (x) (+ x 1)) '(1 2 2))))
+  ))
 
   (print (rewrite-sexpr source-with-let))
   (eval (rewrite-sexpr source-with-let))
-
-
-
 )
