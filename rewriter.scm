@@ -34,6 +34,8 @@
           (rewrite-define (cdar expr) (cddr expr)))
         ((eq? (car expr) 'and)
           (rewrite-and (cdr expr)))
+        ((eq? (car expr) 'or)
+          (rewrite-or (cdr expr)))
         (else (map rewrite-sexpr expr)))))
 
   (define rewrite-let 
@@ -68,31 +70,27 @@
   (define rewrite-and
     (lambda (expr)
       (cond 
-        ((nil? expr) #t)
+        ((nil? expr) '(quote true))
         (else 
           (list
             'cond
             (list (rewrite-sexpr (car expr)) (rewrite-and (cdr expr)))
-            (list else #f))))))
+            (list 'else ()))))))
 
   (define rewrite-or
     (lambda (expr)
       (cond
-        ((nil? expr) #f)
+        ((nil? expr) ())
         (else 
           (list 
             'cond
-            (list (rewrite-sexpr (car expr)) #t)
-            (list else (rewrite-or (cdr expr))))))))
+            (list (rewrite-sexpr (car expr)) '(quote true))
+            (list 'else (rewrite-or (cdr expr))))))))
 
   (define source-with-let 
     '(begin
-      (define addition 
-        (lambda (x y)
-          (let ((ret (+ x y))) ret)))
-      (define (equal x y) (if (eq? x y) "yes" "no"))
       
-      (and 
+      (or 
         (let ((x 1)) (eq? x 1))
         (eq? 1 1)
         #f
